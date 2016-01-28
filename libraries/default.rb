@@ -109,7 +109,8 @@ def mon_addresses
     # primarily to local node
     mons << node if node['ceph']['is_mon']
 
-    mons += mon_nodes
+    #mons += mon_nodes
+    mons += node['ceph']['config']['mon_host'].split(",").map do |a| { "ipaddress" => a} end
     if crowbar?
       mon_ips = mons.map { |node| Chef::Recipe::Barclamp::Inventory.get_network_by_type(node, 'admin').address }
     else
@@ -127,10 +128,10 @@ def mon_secret
   if node['ceph']['encrypted_data_bags']
     secret = Chef::EncryptedDataBagItem.load_secret(node['ceph']['mon']['secret_file'])
     Chef::EncryptedDataBagItem.load('ceph', 'mon', secret)['secret']
-  elsif !mon_nodes.empty?
-    mon_nodes[0]['ceph']['monitor-secret']
   elsif node['ceph']['monitor-secret']
     node['ceph']['monitor-secret']
+  elsif !mon_nodes.empty?
+    mon_nodes[0]['ceph']['monitor-secret']
   else
     Chef::Log.info('No monitor secret found')
     nil
